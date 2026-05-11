@@ -132,6 +132,7 @@ class GenerateRequest(BaseModel):
     input_kb: str
     instruction_template: Optional[str] = None
     instruction_type: Optional[str] = "Sales"
+    call_direction: Optional[str] = "Inbound"
     extra_instructions: Optional[str] = ""
 
 @app.post("/api/generate")
@@ -142,7 +143,13 @@ async def generate(data: GenerateRequest):
     
     if not instruction_template:
         instruction_type = data.instruction_type
-        instruction_template = INSTRUCTION_TEMPLATES.get(instruction_type, INSTRUCTION_TEMPLATES.get("Sales", ""))
+        call_direction = data.call_direction or "Inbound"
+        
+        category_templates = INSTRUCTION_TEMPLATES.get(instruction_type, INSTRUCTION_TEMPLATES.get("Sales", {}))
+        if isinstance(category_templates, dict):
+            instruction_template = category_templates.get(call_direction, list(category_templates.values())[0] if category_templates else "")
+        else:
+            instruction_template = category_templates
 
     if not input_kb:
         return JSONResponse({"error": "Missing required fields"}, status_code=400)

@@ -92,6 +92,19 @@
                     </div>
                 </div>
 
+                <div class="slider-group" style="margin-top: 1rem;">
+                    <label>Call Direction</label>
+                    <div class="slider-tabs" style="max-width: 300px;">
+                        <input type="radio" id="dir-inbound" name="callDirection" value="Inbound" checked>
+                        <label for="dir-inbound" class="slider-tab">Inbound</label>
+
+                        <input type="radio" id="dir-outbound" name="callDirection" value="Outbound">
+                        <label for="dir-outbound" class="slider-tab">Outbound</label>
+
+                        <div class="slider-glider"></div>
+                    </div>
+                </div>
+
                 <div class="form-group" style="margin-top: 1.5rem;">
                     <label for="instructionTemplateText">Prompt Template</label>
                     <textarea id="instructionTemplateText" required></textarea>

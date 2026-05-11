@@ -377,3 +377,14 @@ button:disabled {
 #type-sales:checked~.slider-glider {
     transform: translateX(500%);
 }
+
+/* Call Direction Slider (2 options, each 50% width) */
+#dir-inbound:checked~.slider-glider {
+    width: 50%;
+    transform: translateX(0%);
+}
+
+#dir-outbound:checked~.slider-glider {
+    width: 50%;
+    transform: translateX(100%);
+}

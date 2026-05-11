@@ -5,10 +5,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         const res = await fetch('/api/templates?t=' + new Date().getTime());
         if (res.ok) {
             instructionTemplates = await res.json();
-            const activeType = document.querySelector('input[name="instructionType"]:checked').value;
-            if (instructionTemplates[activeType]) {
-                document.getElementById('instructionTemplateText').value = instructionTemplates[activeType];
-            }
+            updateTemplate();
         }
 
     } catch (e) {
@@ -16,14 +13,20 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-document.querySelectorAll('input[name="instructionType"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
-        const type = e.target.value;
-        if (instructionTemplates[type]) {
-            document.getElementById('instructionTemplateText').value = instructionTemplates[type];
-        }
+document.querySelectorAll('input[name="instructionType"], input[name="callDirection"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        updateTemplate();
     });
 });
+
+function updateTemplate() {
+    const activeType = document.querySelector('input[name="instructionType"]:checked').value;
+    const activeDir = document.querySelector('input[name="callDirection"]:checked').value;
+    
+    if (instructionTemplates[activeType] && instructionTemplates[activeType][activeDir]) {
+        document.getElementById('instructionTemplateText').value = instructionTemplates[activeType][activeDir].trim();
+    }
+}
 
 document.getElementById('evalForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -119,10 +122,7 @@ function displayResults(score, reasoning, improved_kb) {
         }, 100);
 
         // Populate initial template
-        const activeType = document.querySelector('input[name="instructionType"]:checked').value;
-        if (instructionTemplates[activeType] && !document.getElementById('instructionTemplateText').value) {
-            document.getElementById('instructionTemplateText').value = instructionTemplates[activeType];
-        }
+        updateTemplate();
     }
 }
 
