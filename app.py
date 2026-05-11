@@ -67,13 +67,14 @@ Check for the following issues:
 1. Formatting: Does it have excessive blank spaces, blank lines, or unwanted junk characters?
 2. Relevancy & Coherence: Is the content coherent, logically structured, and highly relevant to its own stated topic? Does it contain off-topic garbage or noise?
 
-Return a quality score from 0 to 100, where 100 means the KB is perfectly formatted, clean, coherent, and highly relevant.
-Provide a brief reasoning for your score.
+Return your response strictly as a JSON object with two keys: 
+"score" (a number from 0-100), 
+"reasoning" (a brief string).
 
 Input Knowledge Base:
 {input_kb}
 
-Output your response strictly as a JSON object with two keys: "score" (a number) and "reasoning" (a string). Do not use markdown blocks.
+Do not use markdown blocks.
 """
         response = client.models.generate_content(
             model='gemini-2.5-flash',
@@ -133,6 +134,8 @@ class GenerateRequest(BaseModel):
     instruction_template: Optional[str] = None
     instruction_type: Optional[str] = "Sales"
     call_direction: Optional[str] = "Inbound"
+    agent_name: Optional[str] = "Aaliyah"
+    company_name: Optional[str] = "the company"
     extra_instructions: Optional[str] = ""
 
 @app.post("/api/generate")
@@ -171,6 +174,9 @@ async def generate(data: GenerateRequest):
         client = get_client()
         instr_prompt = f"""
 You are an expert AI agent configuration generator. Based on the provided Input Knowledge Base, generate the final AI agent instructions using the provided Instruction Template.
+
+The AI Agent's name MUST be: {data.agent_name}
+The AI Agent represents the company: {data.company_name}
 
 Instruction Template:
 {instruction_template}
