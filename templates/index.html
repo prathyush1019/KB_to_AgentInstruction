@@ -123,6 +123,26 @@
                 </div>
                 <h3>Final Agent Instructions</h3>
                 <div class="instructions-content" id="finalInstructions"></div>
+                <button type="button" id="downloadBtn" class="hidden" style="margin-top: 1rem; background-color: #3b82f6;">
+                    <span class="btn-text">Download as .txt</span>
+                </button>
+            </div>
+        </section>
+
+        <section id="qaFormSection" class="form-section glass-panel hidden">
+            <h2>Generate Sample Customer Q&A</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">Generate sample questions, answers, and types based on your Knowledge Base.</p>
+            <button type="button" id="generateQaBtn" style="background-color: #8b5cf6;">
+                <span class="btn-text">Generate Q&A</span>
+                <span class="loader hidden"></span>
+            </button>
+
+            <div id="qaContainer" class="instructions-container hidden" style="margin-top: 1.5rem;">
+                <h3>Generated Q&A (JSON)</h3>
+                <pre id="qaOutput" style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.9rem; color: #e2e8f0; margin-bottom: 1rem;"></pre>
+                <button type="button" id="downloadQaBtn" style="background-color: #3b82f6;">
+                    <span class="btn-text">Download Q&A (.txt)</span>
+                </button>
             </div>
         </section>
     </main>

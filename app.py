@@ -1,6 +1,11 @@
 import os
 import json
-from flask import Flask, request, jsonify, render_template
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+from typing import Optional
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -8,7 +13,13 @@ from config import INSTRUCTION_TEMPLATES
 
 load_dotenv()
 
-app = Flask(__name__)
+app = FastAPI()
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Templates
+templates = Jinja2Templates(directory="templates")
 
 def get_client():
     api_key = os.environ.get("GEMINI_API_KEY")
@@ -16,22 +27,22 @@ def get_client():
         raise ValueError("GEMINI_API_KEY is not set. Please set it in the .env file.")
     return genai.Client()
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse(request=request, name="index.html")
 
-@app.route("/api/templates", methods=["GET"])
-def get_templates():
-    return jsonify(INSTRUCTION_TEMPLATES)
+@app.get("/api/templates")
+async def get_templates():
+    return INSTRUCTION_TEMPLATES
 
+class EvaluateRequest(BaseModel):
+    input_kb: str
 
-
-@app.route("/api/evaluate", methods=["POST"])
-def evaluate():
-    data = request.get_json()
-    input_kb = data.get("input_kb")
+@app.post("/api/evaluate")
+async def evaluate(data: EvaluateRequest):
+    input_kb = data.input_kb
     if not input_kb:
-        return jsonify({"error": "Missing required fields"}), 400
+        return JSONResponse({"error": "Missing required fields"}, status_code=400)
 
     try:
         api_key = os.environ.get("GEMINI_API_KEY")
@@ -41,11 +52,11 @@ def evaluate():
             reasoning = "MOCK MODE: KB is poor."
             improved_kb = "MOCK RECONSTRUCTED KB: This is the improved mock KB that meets all standards."
             score = 100
-            return jsonify({
+            return {
                 "score": score,
                 "reasoning": reasoning + " -> Reconstructed by AI.",
                 "improved_kb": improved_kb
-            })
+            }
 
         client = get_client()
 
@@ -108,28 +119,33 @@ Return ONLY the fully cleaned and formatted Knowledge Base without any markdown 
             score = 100
             reasoning = reasoning + " -> Reconstructed by AI to meet standards."
 
-        return jsonify({
+        return {
             "score": score,
             "reasoning": reasoning,
             "improved_kb": improved_kb
-        })
+        }
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return JSONResponse({"error": str(e)}, status_code=500)
 
-@app.route("/api/generate", methods=["POST"])
-def generate():
-    data = request.get_json()
-    input_kb = data.get("input_kb")
-    instruction_template = data.get("instruction_template")
-    extra_instructions = data.get("extra_instructions", "").strip()
+class GenerateRequest(BaseModel):
+    input_kb: str
+    instruction_template: Optional[str] = None
+    instruction_type: Optional[str] = "Sales"
+    extra_instructions: Optional[str] = ""
+
+@app.post("/api/generate")
+async def generate(data: GenerateRequest):
+    input_kb = data.input_kb
+    instruction_template = data.instruction_template
+    extra_instructions = data.extra_instructions.strip() if data.extra_instructions else ""
     
     if not instruction_template:
-        instruction_type = data.get("instruction_type", "Sales")
-        instruction_template = INSTRUCTION_TEMPLATES.get(instruction_type, INSTRUCTION_TEMPLATES["Sales"])
+        instruction_type = data.instruction_type
+        instruction_template = INSTRUCTION_TEMPLATES.get(instruction_type, INSTRUCTION_TEMPLATES.get("Sales", ""))
 
     if not input_kb:
-        return jsonify({"error": "Missing required fields"}), 400
+        return JSONResponse({"error": "Missing required fields"}, status_code=400)
 
     if extra_instructions:
         instruction_template += f"\n\n--- ADDITIONAL INSTRUCTIONS ---\n{extra_instructions}\n"
@@ -138,12 +154,12 @@ def generate():
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key or api_key == "your_gemini_api_key_here":
             final_instructions = f"MOCK AGENT INSTRUCTIONS:\n1. Mock behavior.\n(Evaluated and reconstructed by Mock AI)"
-            return jsonify({
+            return {
                 "final_instructions": final_instructions,
                 "auditor_score": 50,
                 "auditor_reasoning": "MOCK MODE: Initial instructions were poor.",
                 "was_refined": True
-            })
+            }
 
         client = get_client()
         instr_prompt = f"""
@@ -220,14 +236,64 @@ Return ONLY the fully refined agent instructions.
             )
             final_instructions = refine_response.text.strip()
 
-        return jsonify({
+        return {
             "final_instructions": final_instructions,
             "auditor_score": instr_score,
             "auditor_reasoning": instr_reasoning,
             "was_refined": was_refined
-        })
+        }
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+class QaRequest(BaseModel):
+    input_kb: str
+
+@app.post("/api/generate_qa")
+async def generate_qa(data: QaRequest):
+    input_kb = data.input_kb
+    
+    if not input_kb:
+        return JSONResponse({"error": "Missing input_kb"}, status_code=400)
+
+    try:
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key or api_key == "your_gemini_api_key_here":
+            return {
+                "qa_list": [
+                    {"question": "Mock Question?", "answer": "Mock Answer.", "type_of_question": "Mock Type"}
+                ]
+            }
+
+        client = get_client()
+        qa_prompt = f"""
+You are an expert customer support analyst. Based on the following Knowledge Base, generate a list of atleast 25 a customer might ask that can be trivial as well as advanced questions . 
+For each question, provide the answer based strictly on the KB, and categorize the 'type_of_question' (e.g., Pricing, Feature, Support, General).
+
+Input Knowledge Base:
+{input_kb}
+
+Output your response strictly as a JSON array of objects, where each object has the keys: "question", "answer", and "type_of_question". Do not use markdown blocks.
+"""
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=qa_prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+            ),
+        )
+        
+        result_text = response.text.strip()
+        if result_text.startswith("```json"):
+            result_text = result_text.replace("```json", "").replace("```", "").strip()
+        elif result_text.startswith("```"):
+            result_text = result_text.replace("```", "").strip()
+
+        qa_list = json.loads(result_text)
+        return {"qa_list": qa_list}
+
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    import uvicorn
+    uvicorn.run("app:app", host="127.0.0.1", port=5000, reload=True)

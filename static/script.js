@@ -41,6 +41,8 @@ document.getElementById('evalForm').addEventListener('submit', async (e) => {
     resultSection.classList.add('hidden');
     document.getElementById('instructionFormSection').classList.add('hidden');
     document.getElementById('instructionsContainer').classList.add('hidden');
+    if(document.getElementById('qaFormSection')) document.getElementById('qaFormSection').classList.add('hidden');
+    if(document.getElementById('qaContainer')) document.getElementById('qaContainer').classList.add('hidden');
 
     try {
         const response = await fetch('/api/evaluate', {
@@ -109,6 +111,7 @@ function displayResults(score, reasoning, improved_kb) {
 
     if (score >= 75) {
         instructionFormSection.classList.remove('hidden');
+        if(document.getElementById('qaFormSection')) document.getElementById('qaFormSection').classList.remove('hidden');
 
         // Scroll down to the instruction form smoothly
         setTimeout(() => {
@@ -141,6 +144,7 @@ document.getElementById('generateForm').addEventListener('submit', async (e) => 
     btnText.classList.add('hidden');
     loader.classList.remove('hidden');
     instructionsContainer.classList.add('hidden');
+    document.getElementById('downloadBtn').classList.add('hidden');
 
     try {
         const response = await fetch('/api/generate', {
@@ -162,6 +166,7 @@ document.getElementById('generateForm').addEventListener('submit', async (e) => 
 
         instructionsContainer.classList.remove('hidden');
         finalInstructions.textContent = data.final_instructions;
+        document.getElementById('downloadBtn').classList.remove('hidden');
 
         document.getElementById('auditorScore').textContent = data.auditor_score;
         document.getElementById('auditorReasoning').textContent = data.auditor_reasoning;
@@ -199,3 +204,73 @@ function animateValue(obj, start, end, duration) {
     };
     window.requestAnimationFrame(step);
 }
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+    const finalInstructions = document.getElementById('finalInstructions').textContent;
+    if (!finalInstructions) return;
+
+    const blob = new Blob([finalInstructions], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'agent_instructions.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+});
+
+document.getElementById('generateQaBtn').addEventListener('click', async () => {
+    const inputKb = document.getElementById('inputKb').value;
+    const generateQaBtn = document.getElementById('generateQaBtn');
+    const btnText = generateQaBtn.querySelector('.btn-text');
+    const loader = generateQaBtn.querySelector('.loader');
+    const qaContainer = document.getElementById('qaContainer');
+    const qaOutput = document.getElementById('qaOutput');
+
+    generateQaBtn.disabled = true;
+    btnText.classList.add('hidden');
+    loader.classList.remove('hidden');
+    qaContainer.classList.add('hidden');
+
+    try {
+        const response = await fetch('/api/generate_qa', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ input_kb: inputKb })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error || 'Something went wrong');
+        }
+
+        const data = await response.json();
+        
+        const jsonStr = JSON.stringify(data.qa_list, null, 4);
+        qaOutput.textContent = jsonStr;
+        qaContainer.classList.remove('hidden');
+
+    } catch (error) {
+        alert('Error: ' + error.message);
+    } finally {
+        generateQaBtn.disabled = false;
+        btnText.classList.remove('hidden');
+        loader.classList.add('hidden');
+    }
+});
+
+document.getElementById('downloadQaBtn').addEventListener('click', () => {
+    const qaText = document.getElementById('qaOutput').textContent;
+    if (!qaText) return;
+
+    const blob = new Blob([qaText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_qa.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+});
