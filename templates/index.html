@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KB Evaluator Agent</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <main class="container">
+        <header>
+            <h1>Knowledge Base Evaluator</h1>
+            <p>Score your Knowledge Base and generate agent instructions.</p>
+        </header>
+
+        <section class="form-section glass-panel">
+            <form id="evalForm">
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                    Note: The Instruction Templates are loaded from <code>config.py</code>.
+                </p>
+
+                <div class="form-group">
+                    <label for="inputKb">Input Knowledge Base</label>
+                    <textarea id="inputKb" placeholder="Enter the new Knowledge Base to be evaluated..."
+                        required></textarea>
+                </div>
+
+
+
+                <button type="submit" id="submitBtn">
+                    <span class="btn-text">Evaluate KB</span>
+                    <span class="loader hidden"></span>
+                </button>
+            </form>
+        </section>
+
+        <section id="resultSection" class="result-section glass-panel hidden">
+            <h2>Evaluation Results</h2>
+            <div class="score-container">
+                <div class="score-circle">
+                    <svg viewBox="0 0 36 36" class="circular-chart">
+                        <path class="circle-bg" d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path class="circle" stroke-dasharray="0, 100" d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <text x="18" y="20.35" class="percentage">0%</text>
+                    </svg>
+                </div>
+                <div class="score-text">
+                    <p id="reasoningText"></p>
+                </div>
+            </div>
+        </section>
+
+        <section id="instructionFormSection" class="form-section glass-panel hidden">
+            <h2>Generate Agent Instructions</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">Great! Your KB scored over 75. Select the
+                instruction type and generate the final agent.</p>
+            <form id="generateForm">
+                <div class="slider-group">
+                    <label>Instruction Type</label>
+                    <div class="slider-tabs">
+                        <input type="radio" id="type-b2b" name="instructionType" value="B2B">
+                        <label for="type-b2b" class="slider-tab">B2B</label>
+
+                        <input type="radio" id="type-b2c" name="instructionType" value="B2C">
+                        <label for="type-b2c" class="slider-tab">B2C</label>
+
+                        <input type="radio" id="type-c2b" name="instructionType" value="C2B">
+                        <label for="type-c2b" class="slider-tab">C2B</label>
+
+                        <input type="radio" id="type-enquiry" name="instructionType" value="enquiry">
+                        <label for="type-enquiry" class="slider-tab">Enquiry</label>
+
+                        <input type="radio" id="type-leadgen" name="instructionType" value="Lead Generation">
+                        <label for="type-leadgen" class="slider-tab">Lead Gen</label>
+
+                        <input type="radio" id="type-sales" name="instructionType" value="Sales" checked>
+                        <label for="type-sales" class="slider-tab">Sales</label>
+
+                        <div class="slider-glider"></div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label for="instructionTemplateText">Prompt Template</label>
+                    <textarea id="instructionTemplateText" required></textarea>
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="extraInstructions">Additional Instructions (Optional)</label>
+                    <textarea id="extraInstructions" rows="3"
+                        placeholder="E.g., Make sure to mention our new holiday discount..."></textarea>
+                </div>
+
+                <button type="submit" id="generateBtn" style="background-color: #10b981; margin-top: 1rem;">
+                    <span class="btn-text">Generate Instructions</span>
+                    <span class="loader hidden"></span>
+                </button>
+            </form>
+
+            <div id="instructionsContainer" class="instructions-container hidden">
+                <div id="auditorFeedback"
+                    style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 8px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3);">
+                    <h4 style="color: #60a5fa; margin-bottom: 0.5rem;">🤖 Auditor Agent Review</h4>
+                    <p style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-primary);">
+                        <strong>Score:</strong> <span id="auditorScore"></span>/100
+                    </p>
+                    <p style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-primary);">
+                        <strong>Feedback:</strong> <span id="auditorReasoning"></span>
+                    </p>
+                    <p style="font-size: 0.9rem; color: #10b981;" id="refinedStatus"></p>
+                </div>
+                <h3>Final Agent Instructions</h3>
+                <div class="instructions-content" id="finalInstructions"></div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/script.js"></script>
+</body>
+
+</html>
